@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Thử Trang Phục</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --ink: #0d0d0b;
+    --paper: #f5f2ec;
+    --cream: #ede9e0;
+    --gold: #b8945a;
+    --gold-light: #d4b07a;
+    --muted: #7a7469;
+    --border: rgba(13,13,11,0.12);
+    --border-strong: rgba(13,13,11,0.28);
+    --radius: 2px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.5;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border-strong);
+    padding: 0 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .logo span { color: var(--gold); }
+
+  .header-tag {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .api-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .api-area input {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 7px 12px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--ink);
+    border-radius: var(--radius);
+    width: 220px;
+    letter-spacing: 0.05em;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .api-area input:focus { border-color: var(--gold); }
+  .api-area input::placeholder { color: var(--muted); }
+
+  .api-save {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .api-save:hover { background: var(--gold); }
+  .api-save:active { transform: scale(0.97); }
+
+  .api-status {
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 2rem 5rem;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 4rem;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .hero-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    font-weight: 400;
+  }
+
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(42px, 6vw, 72px);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    line-height: 1.8;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .upload-panel {
+    position: relative;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--cream);
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.3s;
+  }
+
+  .upload-panel:hover { border-color: var(--gold-light); }
+  .upload-panel.drag-over { border-color: var(--gold); border-style: dashed; }
+
+  .panel-label {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--paper);
+    border-bottom: 1px solid var(--border);
+    z-index: 2;
+  }
+
+  .panel-label-text {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .panel-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--border-strong);
+  }
+
+  .upload-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+    cursor: pointer;
+    gap: 12px;
+    margin-top: 38px;
+  }
+
+  .upload-icon {
+    width: 36px;
+    height: 36px;
+    opacity: 0.3;
+    flex-shrink: 0;
+  }
+
+  .upload-hint {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  .upload-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    border-radius: var(--radius);
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .upload-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    margin-top: 38px;
+    height: calc(100% - 38px);
+  }
+
+  .remove-btn {
+    position: absolute;
+    top: 46px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 50%;
+    font-size: 12px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    line-height: 1;
+    transition: background 0.2s;
+  }
+
+  .remove-btn:hover { background: #c0392b; }
+
+  .upload-panel.has-image .remove-btn { display: flex; }
+
+  .result-panel {
+    position: relative;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--cream);
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .result-inner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 38px;
+    padding: 1.5rem;
+    position: relative;
+  }
+
+  .result-placeholder {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .result-placeholder svg { opacity: 0.2; }
+
+  .result-placeholder p {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .result-image-wrap {
+    position: absolute;
+    inset: 0;
+    display: none;
+  }
+
+  .result-image-wrap.visible { display: block; }
+
+  .result-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .result-download {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 4;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .result-image-wrap.visible ~ .result-download,
+  .result-download.show { opacity: 1; }
+
+  /* Loading state */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--cream);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 5;
+    margin-top: 38px;
+  }
+
+  .loading-overlay.active { display: flex; }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .loading-steps {
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    text-align: center;
+    min-height: 16px;
+  }
+
+  /* Generate button */
+  .generate-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    animation: fadeUp 0.8s 0.35s ease both;
+  }
+
+  .generate-btn {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    padding: 16px 56px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+  }
+
+  .generate-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.76,0,0.24,1);
+  }
+
+  .generate-btn:hover::after { transform: scaleX(1); }
+  .generate-btn span { position: relative; z-index: 1; }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .generate-btn:disabled::after { display: none; }
+
+  .generate-note {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  /* Error / toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1a0a0a;
+    color: #f5d5d5;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    white-space: nowrap;
+    max-width: 90vw;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .toast.toast-success { background: #0a1a0d; color: #c5f0d5; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Tips */
+  .tips {
+    margin-top: 4rem;
+    border-top: 1px solid var(--border);
+    padding-top: 2.5rem;
+    animation: fadeUp 0.8s 0.5s ease both;
+  }
+
+  .tips-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    font-weight: 400;
+  }
+
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .tip {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .tip-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--border);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .tip-body {}
+  .tip-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 4px;
+    font-weight: 400;
+  }
+
+  .tip-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+  }
+
+  /* Style options */
+  .style-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .style-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 99px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .style-chip.active,
+  .style-chip:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  input[type="file"] { display: none; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 700px) {
+    header { padding: 0 1rem; flex-wrap: wrap; height: auto; padding: 1rem; gap: 8px; }
+    .workspace { grid-template-columns: 1fr 1fr; }
+    .result-panel { grid-column: 1 / -1; aspect-ratio: 3/4; max-height: 420px; }
+    main { padding: 2rem 1rem 4rem; }
+    .api-area input { width: 150px; }
+  }
+
+  @media (max-width: 480px) {
+    .workspace { grid-template-columns: 1fr; }
+    .result-panel { grid-column: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">Atelier<span>.</span>AI</a>
+  <span class="header-tag">Virtual Try-On powered by Gemini</span>
+  <div class="api-area">
+    <input type="password" id="apiKeyInput" placeholder="Gemini API Key…" autocomplete="off"/>
+    <button class="api-save" onclick="saveKey()">Lưu</button>
+    <span class="api-status" id="apiStatus"></span>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <p class="hero-eyebrow">AI Fashion Studio</p>
+    <h1>Thử trang phục<br>bằng <em>trí tuệ nhân tạo</em></h1>
+    <p class="hero-sub">Tải lên ảnh người mẫu và trang phục, AI sẽ tạo ảnh ghép tự nhiên và chuyên nghiệp</p>
+  </div>
+
+  <div class="workspace">
+    <!-- Panel 1: Người mẫu -->
+    <div class="upload-panel" id="panel-model" ondragover="dragOver(event,'panel-model')" ondragleave="dragLeave('panel-model')" ondrop="dropFile(event,'model')">
+      <div class="panel-label">
+        <span class="panel-label-text">Người mẫu</span>
+        <span class="panel-num">01</span>
+      </div>
+      <div class="upload-zone" onclick="document.getElementById('file-model').click()">
+        <svg class="upload-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="18" cy="12" r="6" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M4 32c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <p class="upload-hint">Ảnh chân dung<br>hoặc toàn thân</p>
+        <button class="upload-btn" type="button">Chọn ảnh</button>
+      </div>
+      <img class="preview-img" id="preview-model" src="" alt="Ảnh người mẫu" style="display:none"/>
+      <button class="remove-btn" onclick="removeImage('model')">✕</button>
+      <input type="file" id="file-model" accept="image/*" onchange="handleFile(this,'model')"/>
+    </div>
+
+    <!-- Panel 2: Trang phục -->
+    <div class="upload-panel" id="panel-outfit" ondragover="dragOver(event,'panel-outfit')" ondragleave="dragLeave('panel-outfit')" ondrop="dropFile(event,'outfit')">
+      <div class="panel-label">
+        <span class="panel-label-text">Trang phục</span>
+        <span class="panel-num">02</span>
+      </div>
+      <div class="upload-zone" onclick="document.getElementById('file-outfit').click()">
+        <svg class="upload-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 4L5 10v4h4v18h18V14h4v-4l-8-6c0 0-1 3-4 3s-4-3-4-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+        <p class="upload-hint">Áo, váy, quần<br>hay bộ trang phục</p>
+        <button class="upload-btn" type="button">Chọn ảnh</button>
+      </div>
+      <img class="preview-img" id="preview-outfit" src="" alt="Ảnh trang phục" style="display:none"/>
+      <button class="remove-btn" onclick="removeImage('outfit')">✕</button>
+      <input type="file" id="file-outfit" accept="image/*" onchange="handleFile(this,'outfit')"/>
+    </div>
+
+    <!-- Panel 3: Kết quả -->
+    <div class="result-panel" id="panel-result">
+      <div class="panel-label">
+        <span class="panel-label-text">Kết quả AI</span>
+        <span class="panel-num">03</span>
+      </div>
+      <div class="result-inner">
+        <div class="result-placeholder" id="result-placeholder">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="4" width="32" height="32" rx="1" stroke="currentColor" stroke-width="1"/>
+            <path d="M4 28l10-10 6 6 6-8 10 10" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+            <circle cx="13" cy="14" r="3" stroke="currentColor" stroke-width="1"/>
+          </svg>
+          <p>Kết quả sẽ<br>xuất hiện tại đây</p>
+        </div>
+        <div class="result-image-wrap" id="result-image-wrap">
+          <img id="result-img" src="" alt="Kết quả"/>
+        </div>
+        <div class="loading-overlay" id="loading-overlay">
+          <div class="loading-spinner"></div>
+          <p class="loading-text">Đang xử lý ảnh</p>
+          <p class="loading-steps" id="loading-step">Phân tích hình ảnh…</p>
+        </div>
+      </div>
+      <a class="result-download" id="result-download" href="#" download="atelier-ai-result.png" onclick="downloadResult(event)">Tải xuống</a>
+    </div>
+  </div>
+
+  <div class="generate-wrap">
+    <div class="style-options" id="styleOptions">
+      <button class="style-chip active" data-style="natural">Tự nhiên</button>
+      <button class="style-chip" data-style="fashion">Thời trang</button>
+      <button class="style-chip" data-style="editorial">Editorial</button>
+      <button class="style-chip" data-style="studio">Studio</button>
+      <button class="style-chip" data-style="outdoor">Ngoài trời</button>
+    </div>
+    <button class="generate-btn" id="generateBtn" onclick="generate()">
+      <span>Tạo ảnh ghép</span>
+    </button>
+    <p class="generate-note">
+      Sử dụng Gemini 2.0 Flash · Ảnh được xử lý cục bộ trong trình duyệt của bạn<br>
+      API key không được lưu trên máy chủ
+    </p>
+  </div>
+
+  <div class="tips">
+    <p class="tips-title">Mẹo để có kết quả tốt nhất</p>
+    <div class="tips-grid">
+      <div class="tip">
+        <span class="tip-num">01</span>
+        <div class="tip-body">
+          <p class="tip-label">Ảnh người mẫu</p>
+          <p class="tip-desc">Chọn ảnh rõ nét, ánh sáng tốt, nền đơn giản. Tư thế đứng thẳng hoặc tự nhiên cho kết quả tốt nhất.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-num">02</span>
+        <div class="tip-body">
+          <p class="tip-label">Ảnh trang phục</p>
+          <p class="tip-desc">Chụp trang phục trên nền trắng hoặc sáng. Hiển thị toàn bộ trang phục, không bị che khuất.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-num">03</span>
+        <div class="tip-body">
+          <p class="tip-label">Định dạng ảnh</p>
+          <p class="tip-desc">JPG, PNG, WEBP đều được hỗ trợ. Kích thước tối đa 10MB mỗi ảnh để xử lý nhanh nhất.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-num">04</span>
+        <div class="tip-body">
+          <p class="tip-label">Phong cách</p>
+          <p class="tip-desc">Chọn phong cách phù hợp trước khi tạo ảnh để AI điều chỉnh ánh sáng và bối cảnh tương ứng.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────────────────
+  let images = { model: null, outfit: null };
+  let resultBase64 = null;
+  let apiKey = localStorage.getItem('gemini_api_key') || '';
+  let selectedStyle = 'natural';
+
+  // Restore API key display
+  if (apiKey) {
+    document.getElementById('apiKeyInput').value = apiKey;
+    document.getElementById('apiStatus').textContent = '✓ Đã lưu';
+  }
+
+  // ─── Style chips ─────────────────────────────────────────────────────
+  document.querySelectorAll('.style-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.style-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedStyle = btn.dataset.style;
+    });
+  });
+
+  // ─── API Key ─────────────────────────────────────────────────────────
+  function saveKey() {
+    apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!apiKey) { toast('Vui lòng nhập API key', 'error'); return; }
+    localStorage.setItem('gemini_api_key', apiKey);
+    document.getElementById('apiStatus').textContent = '✓ Đã lưu';
+    toast('Đã lưu API key thành công', 'success');
+  }
+
+  // ─── File handling ───────────────────────────────────────────────────
+  function handleFile(input, type) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast('Ảnh quá lớn, vui lòng chọn ảnh dưới 10MB', 'error'); return; }
+    loadImageFile(file, type);
+  }
+
+  function loadImageFile(file, type) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      images[type] = e.target.result;
+      const preview = document.getElementById('preview-' + type);
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      const panel = document.getElementById('panel-' + type);
+      panel.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage(type) {
+    images[type] = null;
+    const preview = document.getElementById('preview-' + type);
+    preview.src = '';
+    preview.style.display = 'none';
+    document.getElementById('panel-' + type).classList.remove('has-image');
+    document.getElementById('file-' + type).value = '';
+  }
+
+  // Drag & drop
+  function dragOver(e, panelId) {
+    e.preventDefault();
+    document.getElementById(panelId).classList.add('drag-over');
+  }
+
+  function dragLeave(panelId) {
+    document.getElementById(panelId).classList.remove('drag-over');
+  }
+
+  function dropFile(e, type) {
+    e.preventDefault();
+    const panelId = 'panel-' + type;
+    document.getElementById(panelId).classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) { toast('Vui lòng kéo thả file ảnh', 'error'); return; }
+    loadImageFile(file, type);
+  }
+
+  // ─── Generate ────────────────────────────────────────────────────────
+  const stylePrompts = {
+    natural:   'natural lighting, realistic, everyday setting, candid feel',
+    fashion:   'professional fashion photography, soft studio lighting, high-end magazine quality',
+    editorial: 'dramatic editorial fashion, bold composition, high contrast, artistic',
+    studio:    'clean white studio background, professional lighting setup, commercial look',
+    outdoor:   'outdoor natural setting, golden hour lighting, lifestyle photography',
+  };
+
+  async function generate() {
+    if (!apiKey) { toast('Vui lòng nhập và lưu Gemini API key trước', 'error'); return; }
+    if (!images.model) { toast('Vui lòng tải lên ảnh người mẫu', 'error'); return; }
+    if (!images.outfit) { toast('Vui lòng tải lên ảnh trang phục', 'error'); return; }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    showLoading(true);
+    resultBase64 = null;
+    document.getElementById('result-image-wrap').classList.remove('visible');
+    document.getElementById('result-download').classList.remove('show');
+    document.getElementById('result-placeholder').style.display = 'flex';
+
+    const steps = [
+      'Phân tích ảnh người mẫu…',
+      'Nhận diện trang phục…',
+      'Kết hợp hình ảnh…',
+      'Tinh chỉnh kết quả…',
+      'Hoàn thiện ảnh ghép…',
+    ];
+    let si = 0;
+    const stepEl = document.getElementById('loading-step');
+    const stepInterval = setInterval(() => {
+      si = (si + 1) % steps.length;
+      stepEl.textContent = steps[si];
+    }, 1800);
+
+    try {
+      const modelB64 = images.model.split(',')[1];
+      const outfitB64 = images.outfit.split(',')[1];
+      const modelMime = images.model.split(';')[0].split(':')[1];
+      const outfitMime = images.outfit.split(';')[0].split(':')[1];
+      const styleHint = stylePrompts[selectedStyle] || stylePrompts.natural;
+
+      const prompt = `You are an expert fashion AI. Your task is to create a highly realistic, natural-looking composite image showing the person from Image 1 wearing the clothing/outfit from Image 2.
+
+Instructions:
+- Keep the person's face, hair, skin tone, and body proportions exactly as in Image 1
+- Naturally fit the clothing from Image 2 onto the person's body, respecting body shape and posture
+- Adjust the clothing for realistic draping, wrinkles, and fit as it would appear on this specific person
+- Blend lighting naturally so the outfit matches the person's lighting conditions
+- The result should look like a single, professional photograph — not a digital composite
+- Style: ${styleHint}
+- Output ONLY the final composite image, nothing else
+
+Generate the composite image now.`;
+
+      let imgData = null, imgMime = 'image/png';
+      let lastError = '';
+
+      // ── Bước 1: Thử Gemini image-generation models ──────────────────
+      const GEMINI_MODELS = [
+        'gemini-2.0-flash-preview-image-generation',
+        'gemini-2.0-flash-exp',
+      ];
+
+      for (const modelName of GEMINI_MODELS) {
+        stepEl.textContent = `Thử ${modelName}…`;
+        try {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [
+                    { text: prompt },
+                    { inline_data: { mime_type: modelMime, data: modelB64 } },
+                    { inline_data: { mime_type: outfitMime, data: outfitB64 } },
+                  ]
+                }],
+                generationConfig: {
+                  responseModalities: ['IMAGE', 'TEXT'],
+                  temperature: 0.7,
+                }
+              })
+            }
+          );
+          const data = await res.json();
+          if (!res.ok) {
+            lastError = data?.error?.message || `HTTP ${res.status}`;
+            console.warn(modelName, lastError);
+            continue;
+          }
+          const parts = data?.candidates?.[0]?.content?.parts || [];
+          // Log để debug
+          console.log(modelName, 'parts:', parts.map(p => p.inline_data?.mime_type || p.text?.slice(0,80)));
+          for (const part of parts) {
+            if (part.inline_data?.mime_type?.startsWith('image/')) {
+              imgData = part.inline_data.data;
+              imgMime = part.inline_data.mime_type;
+              break;
+            }
+          }
+          if (imgData) break;
+          lastError = 'Model trả về text thay vì ảnh';
+        } catch (err) {
+          lastError = err.message;
+          console.warn(modelName, err.message);
+        }
+      }
+
+      // ── Bước 2: Thử Imagen 3 nếu Gemini không tạo được ảnh ──────────
+      if (!imgData) {
+        stepEl.textContent = 'Thử Imagen 3…';
+        try {
+          const imagenPrompt = `A professional fashion photo: the exact same person from the first reference photo, wearing the outfit from the second reference photo. ${stylePrompts[selectedStyle] || stylePrompts.natural}. Photorealistic, high quality, natural looking.`;
+
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                instances: [{ prompt: imagenPrompt }],
+                parameters: {
+                  sampleCount: 1,
+                  aspectRatio: '3:4',
+                  personGeneration: 'allow_adult',
+                }
+              })
+            }
+          );
+          const data = await res.json();
+          console.log('Imagen3 response:', JSON.stringify(data).slice(0, 300));
+          const pred = data?.predictions?.[0];
+          if (pred?.bytesBase64Encoded) {
+            imgData = pred.bytesBase64Encoded;
+            imgMime = pred.mimeType || 'image/png';
+          } else if (data?.error) {
+            lastError = data.error.message;
+          }
+        } catch (err) {
+          lastError = err.message;
+          console.warn('Imagen3', err.message);
+        }
+      }
+
+      if (!imgData) {
+        throw new Error(
+          `Chưa tạo được ảnh. Lý do: ${lastError}\n\n` +
+          `Giải pháp: Bật VPN (chọn server US hoặc Singapore) rồi thử lại — ` +
+          `tính năng tạo ảnh của Gemini chưa khả dụng đầy đủ ở Việt Nam.`
+        );
+      }
+
+      resultBase64 = `data:${imgMime};base64,${imgData}`;
+      document.getElementById('result-img').src = resultBase64;
+      document.getElementById('result-placeholder').style.display = 'none';
+      document.getElementById('result-image-wrap').classList.add('visible');
+      document.getElementById('result-download').classList.add('show');
+      toast('Tạo ảnh thành công!', 'success');
+
+    } catch (err) {
+      console.error(err);
+      toast('Lỗi: ' + err.message, 'error');
+    } finally {
+      clearInterval(stepInterval);
+      showLoading(false);
+      btn.disabled = false;
+    }
+  }
+
+  function showLoading(on) {
+    document.getElementById('loading-overlay').classList.toggle('active', on);
+  }
+
+  function downloadResult(e) {
+    if (!resultBase64) { e.preventDefault(); return; }
+    const a = document.createElement('a');
+    a.href = resultBase64;
+    a.download = 'atelier-ai-' + Date.now() + '.png';
+    a.click();
+    e.preventDefault();
+  }
+
+  // ─── Toast ───────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg, type = 'error') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast' + (type === 'success' ? ' toast-success' : '') + ' show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+  }
+</script>
+</body>
+</html>
